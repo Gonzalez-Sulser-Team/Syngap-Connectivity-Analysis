@@ -12,7 +12,7 @@ file_types = 'wakeconv' # all, wakeconv, sleep, everyone
 
 montage_name = '/media/jorge/DATADRIVE0/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
 n_electrodes = 32
-amp_filter = 32000
+amp_filter = 750
 
 prm.set_sampling_rate(1000)
 sr=prm.get_sampling_rate()
