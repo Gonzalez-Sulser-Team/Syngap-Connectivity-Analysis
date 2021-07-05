@@ -867,7 +867,7 @@ class Ui_window_Coherence(object):
         self.ButtonDeleteControlFolder.setText(_translate("window_Coherence", "Delete"))
         self.label_6.setText(_translate("window_Coherence", "   WT"))
         self.radioButtonWake.setText(_translate("window_Coherence", "Wake"))
-        self.radioButtonNoREM.setText(_translate("window_Coherence", "No REM"))
+        self.radioButtonNoREM.setText(_translate("window_Coherence", "NonREM"))
         self.radioButtonREM.setText(_translate("window_Coherence", "REM"))
         self.radioButtonConvulsion.setText(_translate("window_Coherence", "Convulsion"))
         self.radioButtonSleeping.setText(_translate("window_Coherence", "Sleeping"))

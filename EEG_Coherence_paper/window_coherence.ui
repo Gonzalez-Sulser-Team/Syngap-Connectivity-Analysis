@@ -325,7 +325,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>No REM</string>
+        <string>NonREM</string>
        </property>
        <property name="autoExclusive">
         <bool>true</bool>

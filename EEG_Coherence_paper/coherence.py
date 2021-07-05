@@ -287,11 +287,11 @@ class MyForm(QMainWindow):
         my_coherence.l_npy_files_WT.append(l_animal_npy_files)
 
     if self.ui.radioButtonOpenEphys.isChecked():
-      my_coherence.montage_name = '/media/jorge/DATADRIVE0/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
+      my_coherence.montage_name = '/media/jorge/otherprojects/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
       my_coherence.recording_type = 'openephys'
       my_coherence.n_electrodes = 32
     elif self.ui.radioButtonTaini.isChecked():
-      my_coherence.montage_name = '/media/jorge/DATADRIVE0/Code/coherence/EEG_Coherence/standard_16grid_taini1.elc'
+      my_coherence.montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/standard_16grid_taini1.elc'
       my_coherence.recording_type = 'taini'
       my_coherence.n_electrodes = 14
 
@@ -456,7 +456,7 @@ class coherence_eeg ():
     for npy_file in animal:
       # first we join all the animal times
       if self.recording_type == 'openephys':
-        raw_list = npy32mne(npy_file, self.montage_name)
+        raw_list = npy32mne(npy_file, self.montage_name, self.final_srate)
       elif self.recording_type == 'taini':
         raw_list = taininumpy2mne(npy_file, self.montage_name, self.final_srate)
 
@@ -489,7 +489,7 @@ class coherence_eeg ():
     for npy_file in animal:
       # first we join all the animal times
       if self.recording_type == 'openephys':
-        raw_list = npy32mne(npy_file, self.montage_name)
+        raw_list = npy32mne(npy_file, self.montage_name, self.final_srate)
       elif self.recording_type == 'taini':
         raw_list = taininumpy2mne(npy_file, self.montage_name, self.final_srate)
       
