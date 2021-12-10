@@ -30,7 +30,32 @@ def load_file(file):  #Opens text files.
     return data
 
 
+
+
 "The function below loads 16 channel headstage recordings individually, specify which one of a potential 4 to load"
+
+def load_16channel_tetrode(folder_name, montage_name, downsampling, amp_filter):
+
+    # headstage_number == 1:
+    channels=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+    data=loadFolderToArray(folder_name, channels, chprefix = 'CH', dtype = float, session = '0', source = '100')
+    data1 = decimate(data*1000, downsampling, axis = 0).astype(int16)
+    # headstage_number == 2:
+    channels=[17,18,19,20,21,22, 23,24,25,26,27,28,29,30,31,32]
+    data=loadFolderToArray(folder_name, channels, chprefix = 'CH', dtype = float, session = '0', source = '100')
+    data2 = decimate(data*1000, downsampling, axis = 0).astype(int16)
+    # headstage_number == 3:
+    channels=[33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
+    data=loadFolderToArray(folder_name, channels, chprefix = 'CH', dtype = float, session = '0', source = '100')
+    data3 = decimate(data*1000, downsampling, axis = 0).astype(int16)
+    # headstage_number == 4:
+    channels=[49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
+    data=loadFolderToArray(folder_name, channels, chprefix = 'CH', dtype = float, session = '0', source = '100')
+    data4 = decimate(data*1000, downsampling, axis = 0).astype(int16)
+    
+    # it returns values in nano Volts as integers.
+    return data1, data2, data3, data4
+
 
 def load_16channel_opto_individually(headstage_number):
 
@@ -40,48 +65,48 @@ def load_16channel_opto_individually(headstage_number):
 
         'Below are 2 functions from OpenEphys to load data channels and auxilary (accelerometer) channels'
         data=loadFolderToArray(prm.get_filepath(), channels, chprefix = 'CH', dtype = float, session = '0', source = '100')#######load file
-        data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
+        #data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
 
         'Add Opto Stim Channel to Data'
 
         data= np.append(data, (np.zeros((data.shape[0],1), dtype=int64)), axis=1)
-        data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
+        #data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
 
     if headstage_number == 2:
         channels=[17,18,19,20,21,22, 23,24,25,26,27,28,29,30,31,32]
 
         'Below are 2 functions from OpenEphys to load data channels and auxilary (accelerometer) channels'
         data=loadFolderToArray(prm.get_filepath(), channels, chprefix = 'CH', dtype = float, session = '0', source = '100')#######load file
-        data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
+        #data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
 
         'Add Opto Stim Channel to Data'
 
         data= np.append(data, (np.zeros((data.shape[0],1), dtype=int64)), axis=1)
-        data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
+        #data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
 
     if headstage_number == 3:
         channels=[33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
 
         'Below are 2 functions from OpenEphys to load data channels and auxilary (accelerometer) channels'
         data=loadFolderToArray(prm.get_filepath(), channels, chprefix = 'CH', dtype = float, session = '0', source = '100')#######load file
-        data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
+        #data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
 
         'Add Opto Stim Channel to Data'
 
         data= np.append(data, (np.zeros((data.shape[0],1), dtype=int64)), axis=1)
-        data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
+        #data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
 
     if headstage_number == 4:
         channels=[49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
 
         'Below are 2 functions from OpenEphys to load data channels and auxilary (accelerometer) channels'
         data=loadFolderToArray(prm.get_filepath(), channels, chprefix = 'CH', dtype = float, session = '0', source = '100')#######load file
-        data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
+        #data_adc=loadFolderToArray(prm.get_filepath(), channels = 'all', chprefix = 'ADC', dtype = float, session = '0', source = '100')#######load file8
 
         'Add Opto Stim Channel to Data'
 
         data= np.append(data, (np.zeros((data.shape[0],1), dtype=int64)), axis=1)
-        data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
+        #data[:,16]=(data_adc[:,0]*300) #Multiply by 300 to have about the same scale for optogenetics.
 
 
     return data
@@ -521,20 +546,23 @@ def load_16_EEG_taini_down_by_state(file_route, brain_states, downsampling, amp_
   # Doing the downsampling now, the decimate function filtering will smooth the edging we have
   # produced in both the amplitude filtering and the split by brain state
   
-  # It will return the filtered and decimated whole thing, but without the brain states row -> [1:, :]
-  raw_data_array = decimate(state_voltage_array[1:, :], downsampling, axis = 1).astype(int16)
-  del state_voltage_array
+  if downsampling == 1:
+    return state_voltage_array, volt_wake, volt_NoREM, volt_REM, volt_convuls
+  else:
+    # It will return the filtered and decimated whole thing, but without the brain states row -> [1:, :]
+    raw_data_array = decimate(state_voltage_array[1:, :], downsampling, axis = 1).astype(int16)
+    del state_voltage_array
 
-  # And the decimated/downsampled (and filtered) arrays for every brain state
-  volt_wake = decimate(volt_wake, downsampling, axis = 1).astype(int16)
-  volt_NoREM = decimate(volt_NoREM, downsampling, axis = 1).astype(int16)
-  volt_REM = decimate(volt_REM, downsampling, axis = 1).astype(int16)
-  if volt_convuls.size > 27:
-    volt_convuls = decimate(volt_convuls, downsampling, axis = 1).astype(int16)
-  else: 
-    print(' Not enough convulsion time for downsampling')
+    # And the decimated/downsampled (and filtered) arrays for every brain state
+    volt_wake = decimate(volt_wake, downsampling, axis = 1).astype(int16)
+    volt_NoREM = decimate(volt_NoREM, downsampling, axis = 1).astype(int16)
+    volt_REM = decimate(volt_REM, downsampling, axis = 1).astype(int16)
+    if volt_convuls.size > 27:
+        volt_convuls = decimate(volt_convuls, downsampling, axis = 1).astype(int16)
+    else: 
+        print(' Not enough convulsion time for downsampling')
 
-  return raw_data_array, volt_wake, volt_NoREM, volt_REM, volt_convuls
+    return raw_data_array, volt_wake, volt_NoREM, volt_REM, volt_convuls
 
 
 def load_16_EEG_taini_down(file_route, downsampling, amp_filter, first_sample, sample_rate):
@@ -562,10 +590,12 @@ def load_16_EEG_taini_down(file_route, downsampling, amp_filter, first_sample, s
   # produced in both the amplitude filtering and the split by brain state
   
   # It will return the filtered and decimated whole thing
-  raw_data_array = decimate(final_data, downsampling, axis = 1).astype(int16)
-  del final_data
-
-  return raw_data_array
+  if downsampling == 1:
+    return final_data
+  else:
+    raw_data_array = decimate(final_data, downsampling, axis = 1).astype(int16)
+    del final_data
+    return raw_data_array
 
 def npy32mne(filename, montage_name, sampling_rate):
     """
@@ -617,6 +647,32 @@ def taininumpy2mne(npy_file, montage_name, sample_rate):
   # 14 eeg channels, 2 emg 
   channel_types=['eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg',
                     'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'emg', 'emg']
+  
+  'This creates the info that goes with the channels, which is names, sampling rate and channel types.'
+  info = mne.create_info(montage.ch_names, sample_rate, ch_types=channel_types)
+  
+  custom_raw = mne.io.RawArray(voltage_array, info)
+  
+  return custom_raw  
+
+def tetrodesnumpy2mne(npy_file, montage_name, sample_rate):
+  ''' converts a .npy files containing 16 eeg electrodes data
+      from tetrodes into mne format. 
+      npy_data: location of the .npy file
+      montage_name: location of the montage file
+      sample_rate: sampling rate of the recording '''
+
+  voltage_array = np.transpose(np.load(npy_file))
+
+  if isinstance('montage_name', str):
+        montage = mne.channels.read_custom_montage(montage_name)
+  else:
+        print("The montage name is not valid")
+
+  
+  # 16 channels, 4 tetrodes 
+  channel_types=['eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg',
+                    'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg', 'eeg']
   
   'This creates the info that goes with the channels, which is names, sampling rate and channel types.'
   info = mne.create_info(montage.ch_names, sample_rate, ch_types=channel_types)

@@ -19,7 +19,11 @@ class indiv_tests ():
 
 
   def load_npy16taini(self, montage_name):
-    self.rawdata = taininumpy2mne(self.recording_path, montage_name, self.sample_rate)    
+    self.rawdata = taininumpy2mne(self.recording_path, montage_name, self.sample_rate)
+
+  
+  def load_npy16tetrodes(self, montage_name):
+    self.rawdata = tetrodesnumpy2mne(self.recording_path, montage_name, self.sample_rate)
 
   
   def apply_ica(self):
@@ -41,12 +45,13 @@ class indiv_tests ():
     mne.viz.plot_raw_psd(filtered_data, fmin=0, fmax=100, picks=electrodes)
   
   def plotRawData(self, binsize, tmin, electrodes):
-    if len(electrodes) < 8: 
-      plotnumber = len(electrodes)
-    else:
-      plotnumber = 8
+    #if len(electrodes) < 8: 
+    #  plotnumber = len(electrodes)
+    #else:
+    #  plotnumber = 8
 
-    fig = self.rawdata.plot(None, binsize, tmin, plotnumber, color = colors, scalings = "auto", order=electrodes, show_options = "true" )
+    fig = self.rawdata.plot(None, binsize, tmin, len(electrodes), color = colors, scalings = "auto", order=electrodes, show_options = "true" )
+    #fig.add_axes(rect=(0.2,0.2,0.2,0.2))
     #fig(num=1, figsize=(8, 6))
 
   def plotPS(self, tmin=0, tmax=60, electrodes=[0,1,2]):

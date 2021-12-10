@@ -37,7 +37,8 @@ from pathlib import Path
 from initial_processes import *
 from data_classes import session_coherence
 
-montage_name = 'standard_32grid_Alfredo'
+#montage_name = 'standard_32grid_Alfredo'
+montage_name = 'standard_32Tcm_Alfredo'
 #montage_name = 'standard_16grid_taini1'
 #montage_name = '/media/jorge/DATADRIVE0/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
 
@@ -287,7 +288,8 @@ class MyForm(QMainWindow):
         my_coherence.l_npy_files_WT.append(l_animal_npy_files)
 
     if self.ui.radioButtonOpenEphys.isChecked():
-      my_coherence.montage_name = '/media/jorge/otherprojects/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
+      #my_coherence.montage_name = '/media/jorge/otherprojects/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
+      my_coherence.montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/standard_32Tcm_Alfredo.elc'
       my_coherence.recording_type = 'openephys'
       my_coherence.n_electrodes = 32
     elif self.ui.radioButtonTaini.isChecked():
@@ -306,7 +308,8 @@ class MyForm(QMainWindow):
     # Esploratory analysis
     if self.ui.checkBoxExploratoryAnalysis.isChecked():
       my_coherence.coh_type = 'imag'
-      for longD in np.arange(2, 5.5, 1):
+      long_distances = [2, 5, 7, 10]
+      for longD in long_distances:
         self.ui.SpinBoxLongDist.setValue(longD)
         self.runNewBrainState()
         file_name = my_coherence.coh_type + '_Dist' + str(longD) + '_' + self.brain_state_name
@@ -441,7 +444,7 @@ class coherence_eeg ():
   final_srate = 1000
 
 
-  def __init__(self, brain_state = 0, montage_name = 'standard_32grid_Alfredo'):
+  def __init__(self, brain_state = 0, montage_name = 'standard_32Tcm_Alfredo'):
     self.brain_state = brain_state
     self.montage_name = montage_name
 

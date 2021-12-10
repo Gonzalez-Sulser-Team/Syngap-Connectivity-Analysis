@@ -39,9 +39,10 @@ def imag_coherence(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None,
     _, Pxy = csd(x, y, fs=fs, window=window, nperseg=nperseg,
                  noverlap=noverlap, nfft=nfft, detrend=detrend, axis=axis)
 
-    Cxy = np.imag(Pxy)**2 / Pxx / Pyy
+    ImgCxy = np.abs(np.imag(Pxy/np.sqrt(Pxx*Pyy)))
+    #Cxy = np.imag(Pxy**2 / Pxx / Pyy)
 
-    return freqs, Cxy
+    return freqs, ImgCxy #Cxy
 
 
 class parallel_coh():
