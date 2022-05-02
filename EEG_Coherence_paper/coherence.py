@@ -292,6 +292,11 @@ class MyForm(QMainWindow):
       my_coherence.montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/standard_32Tcm_Alfredo.elc'
       my_coherence.recording_type = 'openephys'
       my_coherence.n_electrodes = 32
+    elif self.ui.radioButtonOpenEphys_areas.isChecked():
+      #my_coherence.montage_name = '/media/jorge/otherprojects/Code/MNE_Alfredo/standard_32grid_Alfredo.elc'
+      my_coherence.montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/six_areas.elc'
+      my_coherence.recording_type = 'openephys_areas'
+      my_coherence.n_electrodes = 6
     elif self.ui.radioButtonTaini.isChecked():
       my_coherence.montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/standard_16grid_taini1.elc'
       my_coherence.recording_type = 'taini'
@@ -350,8 +355,10 @@ class MyForm(QMainWindow):
     my_coherence.calc_z_coh(frequency_list, self.brain_state_name, self.brain_state, self.ui.spinLongProcesses.value(), self.ui.spinLongChunksize.value(),
                             self.ui.spinShortProcesses.value(), self.ui.spinShortChunksize.value())
 
-    self.freq_list_results = my_coherence.return_freq_results()
-    self.write_table_results()
+    
+    if my_coherence.recording_type != 'openephys_areas':
+      self.freq_list_results = my_coherence.return_freq_results()
+      self.write_table_results()
 
 
   def runNewFreqs(self):
@@ -360,8 +367,9 @@ class MyForm(QMainWindow):
 
     my_coherence.calc_zcoh_freq_bands(frequency_list)
 
-    self.freq_list_results = my_coherence.return_freq_results()
-    self.write_table_results()
+    if my_coherence.recording_type != 'openephys_areas':
+      self.freq_list_results = my_coherence.return_freq_results()
+      self.write_table_results()
 
 
   def closeFigures(self):
@@ -410,8 +418,9 @@ class MyForm(QMainWindow):
 
     for n, freq_interval_results in enumerate(self.freq_list_results):
       self.ui.tableFrequencies.setItem(n+1, 3, QTableWidgetItem(str(freq_interval_results[0])))
-      self.ui.tableFrequencies.setItem(n+1, 4, QTableWidgetItem(str(freq_interval_results[1])))
-      self.ui.tableFrequencies.setItem(n+1, 5, QTableWidgetItem(str(freq_interval_results[2])))
+      if my_coherence.recording_type != 'openephys_areas':
+        self.ui.tableFrequencies.setItem(n+1, 4, QTableWidgetItem(str(freq_interval_results[1])))
+        self.ui.tableFrequencies.setItem(n+1, 5, QTableWidgetItem(str(freq_interval_results[2])))
 
 
 class coherence_eeg ():
@@ -460,6 +469,8 @@ class coherence_eeg ():
       # first we join all the animal times
       if self.recording_type == 'openephys':
         raw_list = npy32mne(npy_file, self.montage_name, self.final_srate)
+      elif self.recording_type == 'openephys_areas':
+        raw_list = npy32to6areas_mne(npy_file, self.montage_name, self.final_srate)
       elif self.recording_type == 'taini':
         raw_list = taininumpy2mne(npy_file, self.montage_name, self.final_srate)
 
@@ -493,6 +504,8 @@ class coherence_eeg ():
       # first we join all the animal times
       if self.recording_type == 'openephys':
         raw_list = npy32mne(npy_file, self.montage_name, self.final_srate)
+      elif self.recording_type == 'openephys_areas':
+        raw_list = npy32to6areas_mne(npy_file, self.montage_name, self.final_srate)
       elif self.recording_type == 'taini':
         raw_list = taininumpy2mne(npy_file, self.montage_name, self.final_srate)
       
@@ -542,7 +555,15 @@ class coherence_eeg ():
   # calculating the different combinations between electrodes, short and long distance
   def calc_combinations(self, neighbors_dist, long_distance):
     self.long_distance = long_distance
-    self.short_d_comb, self.long_d_comb = electrode_combinations(self.montage_name, neighbors_dist, long_distance, self.recording_type, self.n_electrodes)
+    self.short_d_comb, self.long_d_comb, self.elec_names = electrode_combinations(self.montage_name, neighbors_dist, long_distance, self.recording_type, self.n_electrodes)
+    
+    # Names for the openephys_areas recordings
+    if self.recording_type == 'openephys_areas':
+      self.areas_comb_names = []
+      for area_comb in self.short_d_comb:
+        area1 = self.elec_names[area_comb[0]]
+        area2 = self.elec_names[area_comb[1]]
+        self.areas_comb_names.append(str(area1) + '-' + str(area2))
 
   # It gives the chance to change the brain state every time it is called.
   def calc_z_coh(self, f_l, brain_state_name, brain_state = 0, l_processes = 48, l_chunk = 24, s_processes = 12, s_chunk = 12):
@@ -550,12 +571,17 @@ class coherence_eeg ():
     self.brain_state_name = brain_state_name
     self.freq_list = f_l
     for n, Cxy in enumerate(self.all_KO_coh_data):
-      Cxy.calc_cohe_long(self.long_d_comb, l_processes, l_chunk, self.b, self.a, self.coh_type)
+      # when calculating the coherence by areas, all combinations are included in the short distance
       Cxy.calc_cohe_short(self.short_d_comb, s_processes, s_chunk, self.b, self.a, self.coh_type)
+      if self.recording_type != 'openephys_areas':
+        Cxy.calc_cohe_long(self.long_d_comb, l_processes, l_chunk, self.b, self.a, self.coh_type)
+        
 
     for n, Cxy in enumerate(self.all_WT_coh_data):
-      Cxy.calc_cohe_long(self.long_d_comb, l_processes, l_chunk, self.b, self.a, self.coh_type)
       Cxy.calc_cohe_short(self.short_d_comb, s_processes, s_chunk, self.b, self.a, self.coh_type)
+      if self.recording_type != 'openephys_areas':
+        Cxy.calc_cohe_long(self.long_d_comb, l_processes, l_chunk, self.b, self.a, self.coh_type)
+        
 
     self.calc_zcoh_freq_bands(f_l)
 
@@ -564,16 +590,87 @@ class coherence_eeg ():
   def calc_zcoh_freq_bands(self, f_l):
     self.freq_list = f_l
     for Cxy in self.all_KO_coh_data:
-      Cxy.calc_zcoh_long(self.freq_list)
-      Cxy.calc_zcoh_short(self.freq_list)
+      if self.recording_type != 'openephys_areas':
+        Cxy.calc_zcoh_short(self.freq_list)
+        Cxy.calc_zcoh_long(self.freq_list)
+      else:
+        Cxy.calc_areas_coh(self.freq_list)
 
     for Cxy in self.all_WT_coh_data:
-      Cxy.calc_zcoh_long(self.freq_list)
-      Cxy.calc_zcoh_short(self.freq_list)
+      if self.recording_type != 'openephys_areas':
+        Cxy.calc_zcoh_short(self.freq_list)
+        Cxy.calc_zcoh_long(self.freq_list)
+      else:
+        Cxy.calc_areas_coh(self.freq_list)
       if len(Cxy.f_w > 0) : self.f_array = Cxy.f_w
 
     self.f_ratio = Cxy.f_ratio
-    self.calc_mean_coh()
+    if self.recording_type != 'openephys_areas':
+      self.calc_mean_coh()
+    else:
+      self.calc_mean_areas_coh()
+
+  def calc_mean_areas_coh(self):
+    allanimals_areas_coh_WT = []
+    allanimals_areas_coh_KO = []
+    sheets_WT = []
+    sheets_KO = []
+    # Preparing list of dataframes. Each dataframe will refer to an area, WT or KO, 
+    # and will contain a column per each animal. 
+    for comb in self.short_d_comb: 
+        data_fWT = pd.DataFrame({'Freqs': self.f_array})
+        sheets_WT.append(data_fWT)
+        data_fKO = pd.DataFrame({'Freqs': self.f_array})
+        sheets_KO.append(data_fKO)
+
+    for n, Cxy in enumerate(self.all_KO_coh_data):
+      allanimals_areas_coh_KO.append(Cxy.coh_areas_animal)
+      for area, coh_area in enumerate(Cxy.coh_areas_animal):
+        sheets_KO[area]['n' + str(n+1)]= Cxy.coh_areas_animal[area]        
+
+    for n, Cxy in enumerate(self.all_WT_coh_data):
+      allanimals_areas_coh_WT.append(Cxy.coh_areas_animal)
+      for area, coh_area in enumerate(Cxy.coh_areas_animal):
+        sheets_WT[area]['n' + str(n+1)]= coh_area
+        
+    
+    self.mean_areas_coh_KO = np.mean(allanimals_areas_coh_KO, axis = 0)
+    self.mean_areas_coh_WT = np.mean(allanimals_areas_coh_WT, axis = 0)
+    #self.mean_areas_coh = np.mean(np.asarray(allanimals_areas_coh_WT), axis = 0) - np.mean(np.asarray(allanimals_areas_coh_KO), axis = 0)
+    self.plot_areas()
+    
+    # Exporting individual coherences to excel
+    line1 = self.ResultsFolder + '/z_Individual_Coh_' + self.brain_state_name + "_" + '_areas' + "_"
+    line2 = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S')) + "_" + self.coh_type + ".xlsx"
+    excel_name = line1 + line2
+
+    for area, area_name in enumerate(self.areas_comb_names): 
+      df_to_excel(excel_name, sheets_WT[area], area_name + '_WT')
+      df_to_excel(excel_name, sheets_KO[area], area_name + '_KO')    
+
+
+
+  
+  def plot_areas(self):
+    n_rows = 5
+    n_subs = self.mean_areas_coh_WT.shape[0]
+    n_columns = int(n_subs/n_rows)
+    fig, axs = plt.subplots(n_columns, n_rows, figsize = (25, 15))
+    for comb in range(self.mean_areas_coh_WT.shape[0]):
+      x_plot = int(comb/n_rows)
+      y_plot = int(comb%n_rows)
+      axs[x_plot, y_plot].plot(self.f_array, self.mean_areas_coh_KO[comb], label = 'KO', color='#0a1195')
+      #axs[x_plot, y_plot].set_facecolor('#efb7b2')
+      axs[x_plot, y_plot].plot(self.f_array, self.mean_areas_coh_WT[comb], label = 'WT', color='black')
+      axs[x_plot, y_plot].legend()
+      axs[x_plot, y_plot].set_title(self.areas_comb_names[comb])
+      if y_plot == 0:
+        axs[x_plot, y_plot].set(ylabel='Average Imaginary Coherence')
+      if x_plot == n_columns-1:
+        axs[x_plot, y_plot].set(xlabel='Frequency (Hz)')
+
+    plt.savefig(self.ResultsFolder + '/6areas_z_Individual_Coh_' + self.brain_state_name + "_" + str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S')) + '.pdf')
+    
 
 
   def calc_mean_coh(self):
@@ -605,24 +702,29 @@ class coherence_eeg ():
       if Cxy.time_state == 0: continue # sometimes one of the brain state does not occur during a recording
       KO_times.append(Cxy.time_state) # lists of weights to do weighted mean and sem
       KO_all_short_lines_m.append(Cxy.short_line_plot_1rec_m)
-      KO_all_long_lines_m.append(Cxy.long_line_plot_1rec_m)
+      if self.recording_type != 'openephys_areas':
+        KO_all_long_lines_m.append(Cxy.long_line_plot_1rec_m)
       # for plotting short-range
       KO_short_bands_m = []
       KO_long_bands_m = []
       for n, freq_band in enumerate(self.freq_list):
         KO_short_bands_m.append(Cxy.short_1rec_m[n])
-        KO_long_bands_m.append(Cxy.long_1rec_m[n])
+        if self.recording_type != 'openephys_areas':
+          KO_long_bands_m.append(Cxy.long_1rec_m[n])
         if (n>0):
           anova_lst_short.append([Cxy.time_state*Cxy.short_1rec_m[n], freq_band[0], 'KO'])
-          anova_lst_long.append([Cxy.time_state*Cxy.long_1rec_m[n], freq_band[0], 'KO'])
-          anova_lst_ratio.append([(Cxy.long_1rec_m[n]/Cxy.short_1rec_m[n]), freq_band[0], 'KO'])
+          if self.recording_type != 'openephys_areas':
+            anova_lst_long.append([Cxy.time_state*Cxy.long_1rec_m[n], freq_band[0], 'KO'])
+            anova_lst_ratio.append([(Cxy.long_1rec_m[n]/Cxy.short_1rec_m[n]), freq_band[0], 'KO'])
 
       KO_all_short_bands_m_t.append(KO_short_bands_m)
-      KO_all_long_bands_m_t.append(KO_long_bands_m)
+      if self.recording_type != 'openephys_areas':
+        KO_all_long_bands_m_t.append(KO_long_bands_m)
 
     # Lists of lists need to be transposed so in each list there are the values of a single freq band
     KO_all_short_bands_m = np.array(KO_all_short_bands_m_t).T.tolist()
-    KO_all_long_bands_m = np.array(KO_all_long_bands_m_t).T.tolist()
+    if self.recording_type != 'openephys_areas':
+      KO_all_long_bands_m = np.array(KO_all_long_bands_m_t).T.tolist()
 
     total_time = np.sum(np.array(KO_times))
     KO_weights = (n+1)*np.array(KO_times)/total_time
@@ -634,10 +736,11 @@ class coherence_eeg ():
       self.mean_KO_sho_plot_line.append(row_mean)
       self.sem_KO_sho_plot_line.append(row_sem)
 
-    for row in np.array(KO_all_long_lines_m).T:
-      row_mean, row_sem = weighted_avg_sem(row, KO_weights, "KOlonglines")
-      self.mean_KO_lon_plot_line.append(row_mean)
-      self.sem_KO_lon_plot_line.append(row_sem)
+    if self.recording_type != 'openephys_areas':
+      for row in np.array(KO_all_long_lines_m).T:
+        row_mean, row_sem = weighted_avg_sem(row, KO_weights, "KOlonglines")
+        self.mean_KO_lon_plot_line.append(row_mean)
+        self.sem_KO_lon_plot_line.append(row_sem)
 
     # Bar plots and significance tests (a single final value per freq band)
     self.mean_KO_sho = []
@@ -650,13 +753,15 @@ class coherence_eeg ():
       mean_KO_sho, sem_KO_sho = weighted_avg_sem(KO_all_short_bands_m[n], KO_weights, "so")
       self.mean_KO_sho.append(mean_KO_sho)
       self.sem_KO_sho.append(sem_KO_sho)
-      mean_KO_lon, sem_KO_lon = weighted_avg_sem(KO_all_long_bands_m[n], KO_weights, "lo")
-      self.mean_KO_lon.append(mean_KO_lon)
-      self.sem_KO_lon.append(sem_KO_lon)
-      mean_KO_ratio_lon_sho, sem_KO_ratio_lon_sho = weighted_avg_sem(
+      
+      if self.recording_type != 'openephys_areas':
+        mean_KO_lon, sem_KO_lon = weighted_avg_sem(KO_all_long_bands_m[n], KO_weights, "lo")
+        self.mean_KO_lon.append(mean_KO_lon)
+        self.sem_KO_lon.append(sem_KO_lon)
+        mean_KO_ratio_lon_sho, sem_KO_ratio_lon_sho = weighted_avg_sem(
                   np.divide(KO_all_long_bands_m[n], KO_all_short_bands_m[n]), KO_weights, "ratio")
-      self.mean_ratio_KO.append(mean_KO_ratio_lon_sho)
-      self.sem_ratio_KO.append(sem_KO_ratio_lon_sho)
+        self.mean_ratio_KO.append(mean_KO_ratio_lon_sho)
+        self.sem_ratio_KO.append(sem_KO_ratio_lon_sho)
 
     # Same for WT
     WT_all_short_lines_m = []
@@ -672,28 +777,34 @@ class coherence_eeg ():
     self.sem_WT_lon_plot_line = []
 
     WT_all_short_bands_m_t = []
-    WT_all_long_bands_m_t = []
+    if self.recording_type != 'openephys_areas':
+      WT_all_long_bands_m_t = []
     for n, Cxy in enumerate(self.all_WT_coh_data):
       if Cxy.time_state == 0: continue
       WT_times.append(Cxy.time_state) # lists of weights to do weighted mean and sem
       WT_all_short_lines_m.append(Cxy.short_line_plot_1rec_m)
-      WT_all_long_lines_m.append(Cxy.long_line_plot_1rec_m)
+      if self.recording_type != 'openephys_areas':
+        WT_all_long_lines_m.append(Cxy.long_line_plot_1rec_m)
       # for plotting short-range
       WT_short_bands_m = []
       WT_long_bands_m = []
       for n, freq_band in enumerate(self.freq_list):
         WT_short_bands_m.append(Cxy.short_1rec_m[n])
-        WT_long_bands_m.append(Cxy.long_1rec_m[n])
+        if self.recording_type != 'openephys_areas':
+          WT_long_bands_m.append(Cxy.long_1rec_m[n])
         if (n>0):
           anova_lst_short.append([Cxy.time_state*Cxy.short_1rec_m[n], freq_band[0], 'WT'])
-          anova_lst_long.append([Cxy.time_state*Cxy.long_1rec_m[n], freq_band[0], 'WT'])
-          anova_lst_ratio.append([(Cxy.long_1rec_m[n]/Cxy.short_1rec_m[n]), freq_band[0], 'WT'])
+          if self.recording_type != 'openephys_areas':
+            anova_lst_long.append([Cxy.time_state*Cxy.long_1rec_m[n], freq_band[0], 'WT'])
+            anova_lst_ratio.append([(Cxy.long_1rec_m[n]/Cxy.short_1rec_m[n]), freq_band[0], 'WT'])
 
       WT_all_short_bands_m_t.append(WT_short_bands_m)
-      WT_all_long_bands_m_t.append(WT_long_bands_m)
+      if self.recording_type != 'openephys_areas':
+        WT_all_long_bands_m_t.append(WT_long_bands_m)
 
     WT_all_short_bands_m = np.array(WT_all_short_bands_m_t).T.tolist()
-    WT_all_long_bands_m = np.array(WT_all_long_bands_m_t).T.tolist()
+    if self.recording_type != 'openephys_areas':
+      WT_all_long_bands_m = np.array(WT_all_long_bands_m_t).T.tolist()
 
     total_time = np.sum(np.array(WT_times))
     WT_weights = (n+1)*np.array(WT_times)/total_time
@@ -705,10 +816,11 @@ class coherence_eeg ():
       self.mean_WT_sho_plot_line.append(row_mean)
       self.sem_WT_sho_plot_line.append(row_sem)
 
-    for row in np.array(WT_all_long_lines_m).T:
-      row_mean, row_sem = weighted_avg_sem(row, WT_weights, "WTlonglines")
-      self.mean_WT_lon_plot_line.append(row_mean)
-      self.sem_WT_lon_plot_line.append(row_sem)
+    if self.recording_type != 'openephys_areas':
+      for row in np.array(WT_all_long_lines_m).T:
+        row_mean, row_sem = weighted_avg_sem(row, WT_weights, "WTlonglines")
+        self.mean_WT_lon_plot_line.append(row_mean)
+        self.sem_WT_lon_plot_line.append(row_sem)
 
     # Bar plots and significance tests (a single final value per freq band)
     self.mean_WT_sho = []
@@ -721,41 +833,46 @@ class coherence_eeg ():
       mean_WT_sho, sem_WT_sho = weighted_avg_sem(WT_all_short_bands_m[n], WT_weights, "so")
       self.mean_WT_sho.append(mean_WT_sho)
       self.sem_WT_sho.append(sem_WT_sho)
-      mean_WT_lon, sem_WT_lon = weighted_avg_sem(WT_all_long_bands_m[n], WT_weights, "lo")
-      self.mean_WT_lon.append(mean_WT_lon)
-      self.sem_WT_lon.append(sem_WT_lon)
-      mean_WT_ratio_lon_sho, sem_WT_ratio_lon_sho = weighted_avg_sem(
+      if self.recording_type != 'openephys_areas':
+        mean_WT_lon, sem_WT_lon = weighted_avg_sem(WT_all_long_bands_m[n], WT_weights, "lo")
+        self.mean_WT_lon.append(mean_WT_lon)
+        self.sem_WT_lon.append(sem_WT_lon)
+        mean_WT_ratio_lon_sho, sem_WT_ratio_lon_sho = weighted_avg_sem(
                   np.divide(WT_all_long_bands_m[n], WT_all_short_bands_m[n]), WT_weights, "ratio")
-      self.mean_ratio_WT.append(mean_WT_ratio_lon_sho)
-      self.sem_ratio_WT.append(sem_WT_ratio_lon_sho)
+        self.mean_ratio_WT.append(mean_WT_ratio_lon_sho)
+        self.sem_ratio_WT.append(sem_WT_ratio_lon_sho)
 
     ######################
     # Anova calculations #
     # short-range
     self.df_short = pd.DataFrame(anova_lst_short, columns=cols)
     print('')
-    print('###### Dataframe for Short-range ######')
+    if self.recording_type != 'openephys_areas':
+      print('###### Dataframe for Short-range ######')
+    else: 
+      print('###### Dataframe for 6 areas ######')
     print(self.df_short)
     formula = 'band_mean~C(genotype)+C(freq_band)+C(genotype):C(freq_band)'
     model_short = ols(formula, self.df_short).fit()
     aov_table_short = anova_lm(model_short, typ=2)
     print(aov_table_short)
     # long range
-    self.df_long = pd.DataFrame(anova_lst_long, columns=cols)
-    print('')
-    print('###### Dataframe for Long-range ######')
-    print(self.df_long)
-    model_long = ols(formula, self.df_long).fit()
-    aov_table_long = anova_lm(model_long, typ=2)
-    print(aov_table_long)
-    # ratio long/short
-    self.df_ratio = pd.DataFrame(anova_lst_ratio, columns=cols)
-    print('')
-    print('###### Dataframe for Ratio Long/Short ######')
-    print(self.df_ratio)
-    model_ratio = ols(formula, self.df_ratio).fit()
-    aov_table_ratio = anova_lm(model_ratio, typ=2)
-    print(aov_table_ratio)
+    if self.recording_type != 'openephys_areas':
+      self.df_long = pd.DataFrame(anova_lst_long, columns=cols)
+      print('')
+      print('###### Dataframe for Long-range ######')
+      print(self.df_long)
+      model_long = ols(formula, self.df_long).fit()
+      aov_table_long = anova_lm(model_long, typ=2)
+      print(aov_table_long)
+      # ratio long/short
+      self.df_ratio = pd.DataFrame(anova_lst_ratio, columns=cols)
+      print('')
+      print('###### Dataframe for Ratio Long/Short ######')
+      print(self.df_ratio)
+      model_ratio = ols(formula, self.df_ratio).fit()
+      aov_table_ratio = anova_lm(model_ratio, typ=2)
+      print(aov_table_ratio)
 
     print('')
     print('##########################')
@@ -771,42 +888,52 @@ class coherence_eeg ():
       stat, p, dgf = wttest(np.array(KO_all_short_bands_m[n]),
                                 np.array(WT_all_short_bands_m[n]), alternative='two-sided',
                                 usevar='pooled', weights=(KO_w, WT_w), value=0)
-      print('T-test %s Short-Range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
+      
+      if self.recording_type != 'openephys_areas':
+        print('T-test %s Short-Range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
+      else:
+        print('T-test %s six areas = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
       band_results.append(p)
-      stat, p, dgf = wttest(np.array(KO_all_long_bands_m[n]),
-                                np.array(WT_all_long_bands_m[n]), alternative='two-sided',
-                                usevar='pooled', weights=(KO_w, WT_w), value=0)
-      print('T-test %s Long-Range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
-      band_results.append(p)
-      stat, p, dgf = wttest(np.array(np.divide(KO_all_long_bands_m[n], KO_all_short_bands_m[n])),
-                              np.array(np.divide(WT_all_long_bands_m[n], WT_all_short_bands_m[n])),
-                              alternative='two-sided', usevar='pooled', weights=(KO_w, WT_w), value=0)
-      print('T-test %s Ratio Long/Short range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
-      band_results.append(p)
+      if self.recording_type != 'openephys_areas':
+        stat, p, dgf = wttest(np.array(KO_all_long_bands_m[n]),
+                                  np.array(WT_all_long_bands_m[n]), alternative='two-sided',
+                                  usevar='pooled', weights=(KO_w, WT_w), value=0)
+        print('T-test %s Long-Range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
+        band_results.append(p)
+        stat, p, dgf = wttest(np.array(np.divide(KO_all_long_bands_m[n], KO_all_short_bands_m[n])),
+                                np.array(np.divide(WT_all_long_bands_m[n], WT_all_short_bands_m[n])),
+                                alternative='two-sided', usevar='pooled', weights=(KO_w, WT_w), value=0)
+        print('T-test %s Ratio Long/Short range = %.3f, p = %.3f, dgf=%.3f' % (freq_band[0],stat, p, dgf))
+        band_results.append(p)
       self.list_freq_results.append(band_results)
 
     self.plot_mean_short_distance()
-    self.plot_mean_long_distance()
     self.plot_bars()
-    self.bar_plot_ratio_long_short()
+    if self.recording_type != 'openephys_areas':
+      self.plot_mean_long_distance()
+      self.bar_plot_ratio_long_short()
 
     # Plotting individual coherences
     self.plot_individual_zCoh_short_WT()
-    self.plot_individual_zCoh_long_KO()
     self.plot_individual_zCoh_short_KO()
-    self.plot_individual_zCoh_long_WT()
+    if self.recording_type != 'openephys_areas':
+      self.plot_individual_zCoh_long_KO()
+      self.plot_individual_zCoh_long_WT()
 
     # Exporting individual coherences to excel
     line1 = self.ResultsFolder + '/z_Individual_Coh_' + self.brain_state_name + "_" + str(self.long_distance) + "_"
     line2 = str(datetime.now().strftime('%Y_%m_%d_%H_%M_%S')) + "_" + self.coh_type + ".xlsx"
     excel_name = line1 + line2
-    df_to_excel(excel_name, self.df_shortwt, "ShortWT")
-    df_to_excel(excel_name, self.df_longwt, "LongWT")
-    df_to_excel(excel_name, self.df_shortko, "ShortKO")
-    df_to_excel(excel_name, self.df_longko, "LongKO")
+    if self.recording_type != 'openephys_areas':
+      df_to_excel(excel_name, self.df_shortwt, "ShortWT")
+      df_to_excel(excel_name, self.df_longwt, "LongWT")
+      df_to_excel(excel_name, self.df_shortko, "ShortKO")
+      df_to_excel(excel_name, self.df_longko, "LongKO")
+      
 
     #self.plot_WT_average_KO_indiv_short()
-    self.plot_WT_average_KO_indiv_long()
+    if self.recording_type != 'openephys_areas':
+      self.plot_WT_average_KO_indiv_long()
     #self.plot_corr_convulsions_coh()
 
     # Plotting Power Spectrum of the first channel of every rat recording (per brain state)
@@ -920,19 +1047,20 @@ class coherence_eeg ():
 
     plt.show()
 
-    fig2, ax2 = plt.subplots()
-    rects1 = ax2.bar(x - width/2, self.mean_KO_lon, width, yerr=self.sem_KO_lon,  capsize = 3, label='KO', color='red')
-    rects2 = ax2.bar(x + width/2, self.mean_WT_lon, width, yerr=self.sem_WT_lon,  capsize = 3, label='WT', color='black')
+    if self.recording_type != 'openephys_areas':
+      fig2, ax2 = plt.subplots()
+      rects1 = ax2.bar(x - width/2, self.mean_KO_lon, width, yerr=self.sem_KO_lon,  capsize = 3, label='KO', color='red')
+      rects2 = ax2.bar(x + width/2, self.mean_WT_lon, width, yerr=self.sem_WT_lon,  capsize = 3, label='WT', color='black')
 
-    ## Add some text for labels, title and custom x-axis tick labels, etc.
-    ax2.set_ylabel('Mean $z^{-1}$ Coherence')
-    ax2.set_title('Long-range coherence %s' %self.brain_state_name, fontsize=18)
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(labels)
-    ax2.legend()
-    fig2.tight_layout()
+      ## Add some text for labels, title and custom x-axis tick labels, etc.
+      ax2.set_ylabel('Mean $z^{-1}$ Coherence')
+      ax2.set_title('Long-range coherence %s' %self.brain_state_name, fontsize=18)
+      ax2.set_xticks(x)
+      ax2.set_xticklabels(labels)
+      ax2.legend()
+      fig2.tight_layout()
 
-    plt.show()
+      plt.show()
 
 
   def bar_plot_ratio_long_short(self):

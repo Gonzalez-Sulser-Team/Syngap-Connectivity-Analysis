@@ -10,6 +10,8 @@ from statistics import mean
 import matplotlib.pyplot as plt
 import xlsxwriter
 
+from initial_processes import electrode_combinations
+
 from w_perm_analysis import *
 
 from PyQt5.QtWidgets import QMainWindow, QDialog, QApplication, QFileDialog, QTableWidgetItem
@@ -21,6 +23,8 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 
 from datetime import datetime
+
+montage_name = '/media/jorge/otherprojects/Code/coherence/EEG_Coherence/six_areas.elc'
 
 
 def calc_perm_test(perm_averages):
@@ -43,25 +47,34 @@ def get_metadata(filename):
     returns three strings: brain state, long_distance and kind of coherence, absolute or imaginary
 
   '''
+  
   if "_REM" in filename:
         brain_state = "REM"
   elif "NonREM" in filename:
         brain_state = "NonREM"
   elif "Wake" in filename:
         brain_state = "Wake"
+  else:
+        brain_state = "Unknown_brain_state"
 
   for distance in np.arange(1, 14, 0.5):
     code_name = brain_state + "_" + str(distance)[:3]
     if code_name in filename:
       long_distance = str(distance)[:3]
       break
+  
+  if "area" in filename:
+    area_coh = True
+    long_distance = ""
+  else:
+    area_coh = False
 
   if "abs" in filename:
     coh_type = "abs"
   else:
     coh_type = "imag"
 
-  return brain_state, long_distance, coh_type
+  return brain_state, long_distance, coh_type, area_coh
 
 
 
@@ -176,26 +189,45 @@ class MyForm(QMainWindow):
     for matching_file in matching_files:
       file_n = re.sub('.xlsx', '', matching_file)
       file_name = 'perm_analysis_' + file_n
-      self.brain_state, self.longD, self.coh_type = get_metadata(file_n)
-      sheet_n = self.brain_state + self.longD + self.coh_type
+      self.brain_state, self.longD, self.coh_type, self.area = get_metadata(file_n)
+      if self.area:
+        self.workbook.close()
+        sheet_n = self.brain_state + self.coh_type
+        # for the areas analysis we create a different book for every brain state
+        self.workbook = xlsxwriter.Workbook('permutation_stats_' + '_' + sheet_n + '.xlsx')        
+      else:
+        sheet_n = self.brain_state + self.longD + self.coh_type
       file_route = d + matching_file
       l_xlsx_files.append(file_route)
 
       self.dfs = pd.read_excel(file_route, sheet_name=None)
-      self.sheet_name = sheet_n + "Short"
-      self.pvalue_position = 3
-      self.compareGroups('ShortKO', 'ShortWT')
-      self.sheet_name = sheet_n + "Long"
-      self.pvalue_position = 4
-      self.compareGroups('LongKO', 'LongWT')
-      self.print2pdf(file_name)
-      self.closeFigures()
+      
+      if self.area:
+        areas_comb, lcomb, areas_names = electrode_combinations(montage_name, 0.5, 30, 'openephys_areas', 6)
+        for area_comb in areas_comb:
+          sheet_sufix = areas_names[area_comb[0]] + "-" + areas_names[area_comb[1]]
+          self.sheet_name = sheet_sufix
+          self.compareGroups(sheet_sufix + '_WT', sheet_sufix + '_KO')                    
+          self.print2pdf(sheet_sufix + '_' + file_name)
+          self.closeFigures()
+        self.workbook.close()
 
-    self.freq_list_results = []
-    self.get_frequency_bands()
+      else:
+        self.sheet_name = sheet_n + "Short"
+        self.pvalue_position = 3
+        self.compareGroups('ShortKO', 'ShortWT')
+        self.sheet_name = sheet_n + "Long"
+        self.pvalue_position = 4
+        self.compareGroups('LongKO', 'LongWT')
+        self.print2pdf(file_name)
+        self.closeFigures()
+        self.freq_list_results = []
+        self.get_frequency_bands()
 
     self.workbook.close()
     print ("Data and figures correctly exported to excel")
+      
+    
     
     
   def compareGroups(self, group1, group2):
@@ -332,7 +364,8 @@ class MyForm(QMainWindow):
       pvalue = pvalue/self.ui.BoxNumberShuffles.value() # final pvalues for that comparison
       self.freq_list_results.append(pvalue)
 
-    self.write_table_results()
+    if not self.area:
+      self.write_table_results()
 
 
     # plotting bars graph

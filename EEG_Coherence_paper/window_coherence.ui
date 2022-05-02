@@ -1356,7 +1356,7 @@
        <rect>
         <x>19</x>
         <y>451</y>
-        <width>251</width>
+        <width>391</width>
         <height>21</height>
        </rect>
       </property>
@@ -1395,7 +1395,7 @@
       <widget class="QRadioButton" name="radioButtonTaini">
        <property name="geometry">
         <rect>
-         <x>176</x>
+         <x>309</x>
          <y>0</y>
          <width>61</width>
          <height>23</height>
@@ -1406,6 +1406,19 @@
        </property>
        <property name="checked">
         <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="radioButtonOpenEphys_areas">
+       <property name="geometry">
+        <rect>
+         <x>175</x>
+         <y>0</y>
+         <width>121</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Ephys_6areas</string>
        </property>
       </widget>
      </widget>

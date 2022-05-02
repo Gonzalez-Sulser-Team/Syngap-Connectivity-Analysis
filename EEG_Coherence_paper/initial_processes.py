@@ -629,6 +629,57 @@ def npy32mne(filename, montage_name, sampling_rate):
     return custom_raw
 
 
+
+def npy32to6areas_mne(filename, montage_name, sampling_rate):
+    """
+    Load numpy array file of 32 electrodes + 3 aux
+    and converts it to mne format in a montage with 6 areas
+
+    filename: route to the .npy file
+    montage_name: route to the mne montage file with 6 areas
+
+    returns: mne raw object with the 6 areas average voltages
+    
+    """
+    l_custom_raw = []
+    l_areas_positions = []
+    l_voltages = []
+    voltage_array = np.load(filename) # load
+    
+    l_areas_positions.append([0, 1, 8, 9, 10]) # middle_left
+    l_areas_positions.append([2, 3, 4, 5, 6, 7]) # caudal_left
+    l_areas_positions.append([11, 12, 13, 14, 15]) # frontal_left
+    l_areas_positions.append([16, 17, 18, 19, 20]) # frontal_right
+    l_areas_positions.append([24, 25, 26, 27, 28, 29]) # caudal_right
+    l_areas_positions.append([21, 22, 23, 30, 31]) # middle_right
+
+    areas_va = np.zeros(voltage_array[:len(l_areas_positions)].shape)
+    for a, area in enumerate(l_areas_positions):
+        area_va = np.zeros(voltage_array[:len(area)].shape)
+        for pos, electrode in enumerate(area):
+            area_va[pos] = voltage_array[electrode]
+        areas_va[a] = area_va.mean(axis=0)
+
+
+    if isinstance('montage_name', str):
+        montage = mne.channels.read_custom_montage(montage_name)
+    else:
+        print("The montage name is not valid")
+
+    channel_types=['eeg','eeg','eeg','eeg','eeg','eeg']
+    
+    info = mne.create_info(montage.ch_names, sampling_rate, ch_types=channel_types)
+
+    'This makes the object that contains all the data and info about the channels.'
+    'Computations like plotting, averaging, power spectrums can be performed on this object'
+
+    custom_raw = mne.io.RawArray(areas_va, info)
+    del areas_va
+    del area_va
+    del voltage_array
+    return custom_raw
+
+
 def taininumpy2mne(npy_file, montage_name, sample_rate):
   ''' converts a .npy files containing 16 eeg electrodes data
       into mne format. 
@@ -721,12 +772,28 @@ def taininumpy2mnechannels(npy_file, montage_name, sample_rate, channels_list):
 
 
 def electrode_combinations(montage_name, neighbors_dist, long_distance, recording, n_elect = 32):
+  '''
+  calculate all the combinatios without repetition of a list of electrodes, 
+  dividing it in groups belonging to a short distance or long distance
+  Inputs:
+    montage_name: MNE elc montage name
+    neighbors_dist: distance below which combinations should be excluded for being to close to each other
+    long_distance: threshold to split between short and long distance
+    recording: kind of recording = 'taini', 'openephys' or 'openephys_areas'
+    n_elect = number of electrodes, from the montage, to make the combinations from
+  Returns:
+    comb_short_distance: list of tuples with the numeric combinations of electrodes at a short distance
+    comb_long_distance: list of tuples with the numeric combinations of electrodes at a long distance
+    electrode_names: list of the electrode names, which indexes correspond to the numeric values in the combinations
+  '''
   montage = mne.channels.read_custom_montage(montage_name)
   electrode_names = montage.ch_names[0:n_elect]
   
   electrode_pos = np.zeros((n_elect,2))
   for i in np.arange(n_elect):
     if recording == 'taini':
+        electrode_pos[i] = montage.dig[i].get('r')[0:2].round(3)*50 # in mm
+    elif recording == 'openephys_areas':
         electrode_pos[i] = montage.dig[i].get('r')[0:2].round(3)*50 # in mm
     else:
         electrode_pos[i] = montage.dig[i+3].get('r')[0:2].round(3)*50 # in mm
@@ -776,7 +843,7 @@ def electrode_combinations(montage_name, neighbors_dist, long_distance, recordin
       del comb_short_distance[indexes_to_delete_in_short_distance[i] - indexes_already_del]
       indexes_already_del += 1
 
-  return comb_short_distance, comb_long_distance
+  return comb_short_distance, comb_long_distance, electrode_names
 
 
 def create_epochs(analysis_times, sampling_rate): #Makes epoch file for MNE of stimulation times.

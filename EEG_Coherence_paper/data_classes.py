@@ -130,6 +130,12 @@ class session_coherence():
     self.coherence_long = np.asarray(coherences)
 
 
+  def calc_areas_coh(self, f_list = []):
+    k_top_freq = self.set_top_freq()
+    self.f_w=self.f_short[1*self.f_ratio: k_top_freq*self.f_ratio + 1] # 1.5-100 Hz
+    self.coh_areas_animal  = self.coherence_short[:, 1*self.f_ratio: k_top_freq*self.f_ratio + 1]
+    
+  
   def calc_zcoh_short(self, f_list = []):
     k_top_freq = self.set_top_freq()
     self.f_w=self.f_short[1*self.f_ratio: k_top_freq*self.f_ratio + 1] # 1.5-100 Hz
